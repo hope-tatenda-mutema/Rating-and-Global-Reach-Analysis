@@ -1,0 +1,134 @@
+---
+title: "Test for Independence"
+author: "Hope Tatenda Mutema"
+format: html
+editor: visual
+---
+
+## Chi-Square Test for Independence
+
+**Data Set - Netflix data**
+
+**Variables of choice**
+
+-   Rating (Dependent Variable)
+
+-   Available Globally (Independent Variable)
+
+```{r importing data set for analyses}
+#importing the dataset into R for analyses
+netflix_data <- read.csv("~/Downloads/total_netflix_2023 new.csv")
+```
+
+# Cleaning the data for Analyses and creating Sub set
+
+-   The Netflix rating has been grouped into 4 groups based on the general overview of people's ratings on IDMB sites and other website movie rating sites.
+
+```{r creating a subset}
+
+# Creating a subset 
+netflix_data$RatingNum <- as.numeric(netflix_data$Rating) #create another numeric variable for rating (imputing the variable RatingNum) in the data set
+
+#cleaning the data removing the NA's
+netflix_clean <- subset(netflix_data, !is.na(RatingNum) & Available.Globally. %in% c("Yes","No")) # removing missing rating numbers and taking yes or no in avaliable globally
+
+#recoding by reducing rating Data into 4 groups 
+#Poor: 0 to <5
+
+#Below Average: 5 to <7
+
+#Above Average: 7 to <8.5
+
+#Excellent: 8.5 to 10
+
+netflix_clean$RatingGroup <- cut(netflix_clean$RatingNum,
+  breaks = c(-Inf, 5, 7, 8.5, Inf),
+  labels = c("Poor", "Below average", "Above average", "Excellent"),
+  right = FALSE,
+  include.lowest = TRUE
+) # recoding the ratings into 4 ordinal groups (categorical)
+
+table(netflix_clean$RatingGroup) #Frequency table for the associated groups
+
+```
+
+# Creating a Bivariate Table for the Relationship Between movie ratings and their availability globally
+
+```{r bivariate table}
+
+# Contingency table
+
+#bivariate tables using cross tables
+library(summarytools) #library for summary tools
+
+ctable(netflix_clean$Available.Globally.,netflix_clean$RatingGroup)
+```
+
+# Chi-Square Test for Independence
+
+**Hypothesis Being Tested**
+
+**Choose alpha (significance level) = 0.01 since our data-set is large.**
+
+$H_0$: There is no significant relationship between the ratings of Netflix movies and their global availability. That is rating and global availability are independent
+
+$H_A$: There is a significant relationship between the ratings of Netflix movies and their global availability. That is availability globally depend on rating.
+
+**Reporting the results in APA Citation**
+
+$\chi^2(3,n=18,328) = 14.06, p< 0.01$
+
+**Conclusion**
+
+Since the p value is less than our significance level of 0.01 we can conclude there is a statistically significant relationship between rating groups and the availability of the movie globally. Indicating that the ratings of Netflix movies do influence their global availability.
+
+```{r}
+#created the chi-sqaure table for chi-square test
+netflix_table_chi_square <- table(netflix_clean$Available.Globally., netflix_clean$RatingGroup)
+chisq.test(netflix_table_chi_square)
+```
+
+# Interpreting Chi-Square
+
+# Standardized and Unstandardize Effect
+
+## Interpreting Independent Variables Percentage In the Bivariate Table
+
+Based on the unstandardized effect size test, we can conclude that there isn’t a significant difference between the ratings of the movies and their availability globally.
+
+## Standardized Effect
+
+-   For standardized effect size using the **Cramer's V standardized** effect size
+
+**Conclusion**
+
+The Cramér's V of 0.0277 reveals that the connection between Netflix global availability and movie ratings is weak, indicating that factors beyond ratings likely influence distribution decisions.
+
+```{r}
+# If not installed, install DescTools package
+# install.packages("DescTools")
+library(DescTools)
+
+cramer_v <- CramerV(netflix_table_chi_square)
+print(cramer_v)
+
+```
+
+# Power Test for Chi-Square
+
+**Conclusion on the power test**
+
+The power of the Chi-Squared test, calculated at **0.7474**, indicates a moderate probability of correctly rejecting the null hypothesis if an actual association exists between Netflix movies global availability and movie ratings. This level of power suggests that while there is a reasonable chance of detecting a true effect, there remains a notable risk of a Type II error, approximately **25.6%**, where the test may fail to identify a significant relationship when one is present. The choice of a significance level at **0.01** adds rigor to the analysis by reducing the likelihood of false positives but may also contribute to the observed moderate power.
+
+```{r}
+library(pwr)
+
+# Parameters from your test
+w <- cramer_v           # effect size
+df <- 3                 # degrees of freedom from your test
+N <- sum(netflix_table_chi_square)    # total sample size
+alpha <- 0.01          # use 0.05 or another value if specified
+
+power_result <- pwr.chisq.test(w = w, N = N, df = df, sig.level = alpha)
+print(power_result)
+```
